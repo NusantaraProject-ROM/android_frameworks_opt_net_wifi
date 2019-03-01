@@ -323,6 +323,18 @@ public class WifiServiceImpl extends BaseWifiService {
                         mClientModeImpl.sendMessage(Message.obtain(msg));
                     }
                     break;
+                case WifiManager.START_WPS:
+                    if (checkChangePermissionAndReplyIfNotAuthorized(
+                            msg, WifiManager.WPS_FAILED)) {
+                        mClientModeImpl.sendMessage(Message.obtain(msg));
+                    }
+                    break;
+                case WifiManager.CANCEL_WPS:
+                    if (checkChangePermissionAndReplyIfNotAuthorized(
+                            msg, WifiManager.CANCEL_WPS_FAILED)) {
+                        mClientModeImpl.sendMessage(Message.obtain(msg));
+                    }
+                    break;
                 case WifiManager.DISABLE_NETWORK:
                     if (checkPrivilegedPermissionsAndReplyIfNotAuthorized(
                             msg, WifiManager.DISABLE_NETWORK_FAILED)) {
@@ -716,18 +728,14 @@ public class WifiServiceImpl extends BaseWifiService {
 
     }
 
-    /**
-     * WPS support in Client mode is deprecated.  Return null.
-     */
     @Override
     public String getCurrentNetworkWpsNfcConfigurationToken() {
-        // while CLs are in flight, return null here, will be removed (b/72423090)
         enforceConnectivityInternalPermission();
         if (mVerboseLoggingEnabled) {
             mLog.info("getCurrentNetworkWpsNfcConfigurationToken uid=%")
                     .c(Binder.getCallingUid()).flush();
         }
-        return null;
+        return mClientModeImpl.syncGetCurrentNetworkWpsNfcConfigurationToken();
     }
 
     boolean mInIdleMode;
