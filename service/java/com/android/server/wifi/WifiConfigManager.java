@@ -76,8 +76,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.crypto.Mac;
-
 /**
  * This class provides the APIs to manage configured Wi-Fi networks.
  * It deals with the following:
@@ -1232,12 +1230,11 @@ public class WifiConfigManager {
             return new NetworkUpdateResult(WifiConfiguration.INVALID_NETWORK_ID);
         }
 
-        // Update the keys for non-Passpoint enterprise networks.  For Passpoint, the certificates
-        // and keys are installed at the time the provider is installed.
-        if (config.enterpriseConfig != null
-                && config.enterpriseConfig.getEapMethod() != WifiEnterpriseConfig.Eap.NONE
-                && !config.isPasspoint()) {
-            if (!(mWifiKeyStore.updateNetworkKeys(newInternalConfig, existingInternalConfig))) {
+        // Update the keys for saved enterprise networks. For Passpoint, the certificates
+        // and keys are installed at the time the provider is installed. For suggestion enterprise
+        // network the certificates and keys are installed at the time the suggestion is added
+        if (!config.isPasspoint() && !config.fromWifiNetworkSuggestion && config.isEnterprise()) {
+            if (!mWifiKeyStore.updateNetworkKeys(newInternalConfig, existingInternalConfig)) {
                 return new NetworkUpdateResult(WifiConfiguration.INVALID_NETWORK_ID);
             }
         }
@@ -1374,9 +1371,10 @@ public class WifiConfigManager {
         if (mVerboseLoggingEnabled) {
             Log.v(TAG, "Removing network " + config.getPrintableSsid());
         }
-        // Remove any associated enterprise keys for non-Passpoint networks.
-        if (!config.isPasspoint() && config.enterpriseConfig != null
-                && config.enterpriseConfig.getEapMethod() != WifiEnterpriseConfig.Eap.NONE) {
+        // Remove any associated enterprise keys for saved enterprise networks. Passpoint network
+        // will remove the enterprise keys when provider is uninstalled. Suggestion enterprise
+        // networks will remove the enterprise keys when suggestion is removed.
+        if (!config.isPasspoint() && !config.fromWifiNetworkSuggestion && config.isEnterprise()) {
             mWifiKeyStore.removeKeys(config.enterpriseConfig);
         }
 
@@ -1560,6 +1558,12 @@ public class WifiConfigManager {
      */
     private void setNetworkSelectionEnabled(WifiConfiguration config) {
         NetworkSelectionStatus status = config.getNetworkSelectionStatus();
+        if (status.getNetworkSelectionStatus()
+                != NetworkSelectionStatus.NETWORK_SELECTION_ENABLED) {
+            localLog("setNetworkSelectionEnabled: configKey=" + config.configKey()
+                    + " old networkStatus=" + status.getNetworkStatusString()
+                    + " disableReason=" + status.getNetworkDisableReasonString());
+        }
         status.setNetworkSelectionStatus(
                 NetworkSelectionStatus.NETWORK_SELECTION_ENABLED);
         status.setDisableTime(
