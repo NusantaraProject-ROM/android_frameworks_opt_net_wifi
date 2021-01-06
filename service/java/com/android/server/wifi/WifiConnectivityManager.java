@@ -177,6 +177,7 @@ public class WifiConnectivityManager {
     private boolean mPnoScanStarted = false;
     private boolean mPeriodicScanTimerSet = false;
     private boolean mDelayedPartialScanTimerSet = false;
+    private boolean mWatchdogScanTimerSet = false;
 
     // Used for Initial Scan metrics
     private boolean mFailedInitialPartialScan = false;
@@ -1479,6 +1480,15 @@ public class WifiConnectivityManager {
                             mClock.getElapsedSinceBootMillis() + WATCHDOG_INTERVAL_MS,
                             WATCHDOG_TIMER_TAG,
                             mWatchdogListener, mEventHandler);
+        mWatchdogScanTimerSet = true;
+    }
+
+    // Cancel the watchdog scan timer.
+    private void cancelWatchdogScan() {
+        if (mWatchdogScanTimerSet) {
+            mAlarmManager.cancel(mWatchdogListener);
+            mWatchdogScanTimerSet = false;
+        }
     }
 
     // Schedules a delayed partial scan, which will scan the frequencies in mCachedWifiCandidates.
@@ -1915,6 +1925,7 @@ public class WifiConnectivityManager {
         if (!mRunning) return;
         mRunning = false;
         stopConnectivityScan();
+        cancelWatchdogScan();
         resetLastPeriodicSingleScanTimeStamp();
         mOpenNetworkNotifier.clearPendingNotification(true /* resetRepeatDelay */);
         mLastConnectionAttemptBssid = null;
