@@ -22,6 +22,7 @@ import android.content.IntentFilter;
 import android.net.MacAddress;
 import android.net.util.MacAddressUtils;
 import android.net.wifi.SoftApConfiguration;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Process;
 import android.text.TextUtils;
@@ -273,8 +274,7 @@ public class WifiApConfigStore {
     private SoftApConfiguration getDefaultApConfiguration() {
         SoftApConfiguration.Builder configBuilder = new SoftApConfiguration.Builder();
         configBuilder.setBand(SoftApConfiguration.BAND_2GHZ);
-        configBuilder.setSsid(mContext.getResources().getString(
-                R.string.wifi_tether_configure_ssid_default) + "_" + getRandomIntForDefaultSsid());
+        configBuilder.setSsid(Build.MODEL);
         if (ApConfigUtil.isWpa3SaeSupported(mContext)) {
             configBuilder.setPassphrase(generatePassword(),
                     SoftApConfiguration.SECURITY_TYPE_WPA3_SAE_TRANSITION);
@@ -285,15 +285,8 @@ public class WifiApConfigStore {
         return configBuilder.build();
     }
 
-    private static int getRandomIntForDefaultSsid() {
-        Random random = new Random();
-        return random.nextInt((RAND_SSID_INT_MAX - RAND_SSID_INT_MIN) + 1) + RAND_SSID_INT_MIN;
-    }
-
     private static String generateLohsSsid(Context context) {
-        return context.getResources().getString(
-                R.string.wifi_localhotspot_configure_ssid_default) + "_"
-                + getRandomIntForDefaultSsid();
+        return Build.MODEL;
     }
 
     /**
