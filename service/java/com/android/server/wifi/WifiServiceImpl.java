@@ -3930,13 +3930,15 @@ public class WifiServiceImpl extends BaseWifiService {
      * @return a list of network suggestions suggested by this app
      */
     public List<WifiNetworkSuggestion> getNetworkSuggestions(String callingPackageName) {
-        mAppOps.checkPackage(Binder.getCallingUid(), callingPackageName);
+        int callingUid = Binder.getCallingUid();
+        mAppOps.checkPackage(callingUid, callingPackageName);
         enforceAccessPermission();
         if (mVerboseLoggingEnabled) {
             mLog.info("getNetworkSuggestionList uid=%").c(Binder.getCallingUid()).flush();
         }
         return mWifiThreadRunner.call(() ->
-                mWifiNetworkSuggestionsManager.get(callingPackageName), Collections.emptyList());
+                mWifiNetworkSuggestionsManager.get(callingPackageName, callingUid),
+                Collections.emptyList());
     }
 
     /**
@@ -4264,7 +4266,7 @@ public class WifiServiceImpl extends BaseWifiService {
         mWifiThreadRunner.post(() ->
                 mWifiNetworkSuggestionsManager
                         .registerSuggestionConnectionStatusListener(binder, listener,
-                                listenerIdentifier, packageName));
+                                listenerIdentifier, packageName, uid));
     }
 
     /**
@@ -4274,14 +4276,15 @@ public class WifiServiceImpl extends BaseWifiService {
     public void unregisterSuggestionConnectionStatusListener(
             int listenerIdentifier, String packageName) {
         enforceAccessPermission();
+        int uid = Binder.getCallingUid();
         if (mVerboseLoggingEnabled) {
             mLog.info("unregisterSuggestionConnectionStatusListener uid=%")
-                    .c(Binder.getCallingUid()).flush();
+                    .c(uid).flush();
         }
         mWifiThreadRunner.post(() ->
                 mWifiNetworkSuggestionsManager
                         .unregisterSuggestionConnectionStatusListener(listenerIdentifier,
-                                packageName));
+                                packageName, uid));
     }
 
     @Override
